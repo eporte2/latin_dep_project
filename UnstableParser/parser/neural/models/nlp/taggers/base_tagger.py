@@ -2,13 +2,13 @@
 # -*- coding: UTF-8 -*-
 
 # Copyright 2016 Timothy Dozat
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,7 @@ import re
 import codecs
 import numpy as np
 import tensorflow as tf
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 from parser.misc.colors import ctext, color_pattern
 from parser.neural.models.nn import NN
@@ -31,20 +31,20 @@ from parser.neural.models.nn import NN
 #***************************************************************
 class BaseTagger(NN):
   """"""
-  
+
   PAD = 0
   ROOT = 1
-  
+
   #=============================================================
   def __call__(self, vocabs, moving_params=None):
     """"""
-    
+
     self.moving_params = moving_params
     if isinstance(vocabs, dict):
       self.vocabs = vocabs
     else:
       self.vocabs = {vocab.name: vocab for vocab in vocabs}
-    
+
     input_vocabs = [self.vocabs[name] for name in self.input_vocabs]
     embed = self.embed_concat(input_vocabs)
     for vocab in self.vocabs.values():
@@ -58,17 +58,17 @@ class BaseTagger(NN):
     self._bucket_size = tf.shape(placeholder)[1]
     self._sequence_lengths = tf.reduce_sum(tf.to_int32(tf.greater(placeholder, self.PAD)), axis=1)
     self._n_tokens = tf.to_int32(tf.reduce_sum(self.tokens_to_keep))
-    
+
     top_recur = embed
     for i in xrange(self.n_layers):
       with tf.variable_scope('RNN%d' % i):
         top_recur, _ = self.RNN(top_recur, self.recur_size)
     return top_recur
-  
+
   #=============================================================
   def process_accumulators(self, accumulators, time=None):
     """"""
-    
+
     n_tokens, n_seqs, loss, corr, seq_corr = accumulators
     acc_dict = {
       'Loss': loss,
@@ -81,20 +81,20 @@ class BaseTagger(NN):
         'Seq_rate': n_seqs / time,
       })
     return acc_dict
-  
+
   #=============================================================
   def update_history(self, history, accumulators):
     """"""
-    
+
     acc_dict = self.process_accumulators(accumulators)
     for key, value in acc_dict.iteritems():
       history[key].append(value)
     return history['TS'][-1]
-  
+
   #=============================================================
   def print_accuracy(self, accumulators, time, prefix='Train'):
     """"""
-    
+
     acc_dict = self.process_accumulators(accumulators, time=time)
     strings = []
     strings.append(color_pattern('Loss:', '{Loss:7.3f}', 'bright_red'))
@@ -104,13 +104,13 @@ class BaseTagger(NN):
     string = ctext('{0}  ', 'bold') + ' | '.join(strings)
     print(string.format(prefix, **acc_dict))
     return
-  
+
   #=============================================================
   def plot(self, history, prefix='Train'):
     """"""
-    
+
     pass
-  
+
   #=============================================================
   def check(self, preds, sents, fileobj):
     """"""
@@ -125,12 +125,12 @@ class BaseTagger(NN):
   #=============================================================
   def write_probs(self, sents, output_file, probs, inv_idxs):
     """"""
-    
+
     # Turns list of tuples of tensors into list of matrices
     tag_probs = [tag_prob for batch in probs for tag_prob in batch[0]]
     tokens_to_keep = [weight for batch in probs for weight in batch[1]]
     tokens = [sent for batch in sents for sent in batch]
-    
+
     with codecs.open(output_file, 'w', encoding='utf-8', errors='ignore') as f:
       for i in inv_idxs:
         sent, tag_prob, weights = tokens[i], tag_probs[i], tokens_to_keep[i]
@@ -145,12 +145,12 @@ class BaseTagger(NN):
           f.write('\t'.join(token)+'\n')
         f.write('\n')
     return
-  
+
   #=============================================================
   @property
   def train_keys(self):
     return ('n_tokens', 'n_seqs', 'loss', 'n_correct', 'n_seqs_correct')
-  
+
   #=============================================================
   @property
   def valid_keys(self):

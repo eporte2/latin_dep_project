@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
- 
+
 # Copyright 2016 Timothy Dozat
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,7 @@ from collections import Counter
 import numpy as np
 from scipy.optimize import curve_fit
 from scipy.stats import poisson, nbinom
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import tensorflow as tf
 
 from parser import Configurable
@@ -34,51 +34,51 @@ from parser.misc.colors import ctext, color_pattern
 #***************************************************************
 class Bucketer(Configurable):
   """"""
-  
+
   #=============================================================
   def __init__(self, k, *args, **kwargs):
     """"""
-    
+
     super(Bucketer, self).__init__(*args, **kwargs)
-    
+
     self._k = k
     self.__enter__()
     return
-  
+
   #=============================================================
   def compute_splits(self, data, plot=True):
     """"""
-    
+
     len2cnt = Counter(data)
-    
+
     # Error checking
     if len(len2cnt) < self.k:
       raise ValueError('Trying to sort %d lengths into %d buckets' % (len(len2cnt), self.k))
-    
+
     # Initialize
     self._len2cnt = len2cnt
     self._lengths = sorted(self.len2cnt.keys())
-    
+
     # Initialize the splits evenly
     lengths = sorted([l for length, count in len2cnt.items() for l in [length]*count])
     self._splits = [np.max(split) for split in np.array_split(lengths, self.k)]
-    
+
     # Make sure all the splits are ordered correctly and present in the len2cnt
     idx = len(self)-1
     while idx > 0:
       while self[idx] > self.lengths[0] and (self[idx] <= self[idx-1] or self[idx] not in self.len2cnt):
         self[idx] -= 1
       idx -= 1
-    
+
     idx = 1
     while idx < len(self)-1:
       while self[idx] < self.lengths[-1] and (self[idx] <= self[idx-1] or self[idx] not in self.len2cnt):
         self[idx] += 1
       idx += 1
-    
+
     # Reindex
     self.reindex()
-    
+
     # Iterate
     old_splits = None
     i = 0
@@ -90,14 +90,14 @@ class Bucketer(Configurable):
       i += 1
     if self.verbose:
       print(color_pattern('Final # of tokens in buckets:', str(self.size()), 'bright_white'))
-    
+
     self.reindex()
     return self._splits
-  
+
   #=============================================================
   def reindex(self):
     """"""
-    
+
     idx = 0
     self._counts = [0 for _ in self]
     self._lidxs = []
@@ -107,17 +107,17 @@ class Bucketer(Configurable):
         self.lidxs.append(lidx)
         idx += 1
     return
-    
+
   #=============================================================
   def recenter(self):
     """"""
-    
+
     for idx in xrange(len(self)-1):
       split = self[idx]
       lidx = self.lidxs[idx]
       old_size = self.size()
       count = self.len2cnt[self.lengths[lidx]]
-      
+
       if lidx > 0 and self.lengths[lidx-1] not in self:
         self[idx] = self.lengths[lidx-1]
         new_size = self.size()
@@ -128,7 +128,7 @@ class Bucketer(Configurable):
           continue
         else:
           self[idx] = self.lengths[lidx]
-      
+
       if lidx < len(self.lengths)-1 and self.lengths[lidx+1] not in self:
         self[idx] = self.lengths[lidx+1]
         new_size = self.size()
@@ -139,11 +139,11 @@ class Bucketer(Configurable):
         else:
           self[idx] = self.lengths[lidx]
     return
-  
+
   #=============================================================
   def size(self):
     """"""
-    
+
     size = 0
     idx = 0
     for lidx, length in enumerate(self.lengths):
@@ -151,11 +151,11 @@ class Bucketer(Configurable):
       if length == self[idx]:
         idx += 1
     return size
-  
+
   #=============================================================
   def plot(self, use_poisson=False):
     """"""
-    
+
     x = np.array(self.len2cnt.keys(), dtype=np.float32)
     y = np.array(self.len2cnt.values(), dtype=np.float32)
     y /= np.sum(y)
@@ -168,7 +168,7 @@ class Bucketer(Configurable):
     else:
       yhat = nbinom.pmf(x, r, 1-p)
     error = yhat - y
-    
+
     fig, (ax0, ax1) = plt.subplots(figsize=(10,5), ncols=2)
     ax0.plot(x, yhat.flatten(), label='Best fit')
     ax0.plot(x, y, label='Data')
@@ -180,7 +180,7 @@ class Bucketer(Configurable):
     ax0.set_xlim(xmin=np.min(x)-.5, xmax=np.max(x)+.5)
     for split in self:
       ax0.axvline(split, color='k', ls='--')
-    
+
     ax1.set_title('Error of best fit')
     ax1.plot(x, y - yhat.flatten(), 'r')
     ax1.grid()
@@ -189,12 +189,12 @@ class Bucketer(Configurable):
     ax1.set_xlim(xmin=np.min(x)-.5, xmax=np.max(x)+.5)
     for split in self:
       ax1.axvline(split, color='k', ls='--')
-    
+
     fig.suptitle('Negative Binomial Distribution', fontsize=14, fontweight='bold')
     fig.tight_layout()
     fig.subplots_adjust(top=.875)
     plt.savefig(os.path.join(self.save_dir, '%s.png' % (self.name)))
-  
+
   #=============================================================
   @property
   def k(self):
@@ -211,7 +211,7 @@ class Bucketer(Configurable):
   @property
   def lengths(self):
     return self._lengths
-  
+
   #=============================================================
   def __len__(self):
     return len(self._splits)
@@ -230,7 +230,7 @@ class Bucketer(Configurable):
     return self._splits == value
   def __ne__(self, value):
     return self._splits != value
-  def __enter__(self):  
+  def __enter__(self):
     self._len2cnt = {}
     self._lengths = []
     self._counts = []
@@ -241,14 +241,14 @@ class Bucketer(Configurable):
     if exception_type is not None:
       raise exception_type(exception_value)
     return True
-  
+
 #***************************************************************
 if __name__ == '__main__':
   """"""
-  
+
   from parser import Configurable
   from parser.misc.bucketer import Bucketer
-  
+
   from scipy.stats import truncnorm
   with Bucketer(5) as bucketer:
     print(bucketer.compute_splits([[0] * np.int(truncnorm(0, 10, scale=5).rvs()) for _ in xrange(1000)]))

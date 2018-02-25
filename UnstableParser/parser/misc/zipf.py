@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2016 Timothy Dozat
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,7 @@ import os
 import cPickle as pkl
 
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import tensorflow as tf
 
 from parser import Configurable
@@ -32,13 +32,13 @@ from parser.neural.optimizers import RadamOptimizer
 #***************************************************************
 class Zipf(Configurable):
   """"""
-  
+
   #=============================================================
   def __init__(self, counts, *args, **kwargs):
     """"""
-    
+
     super(Zipf, self).__init__(*args, **kwargs)
-    
+
     self._counts = counts
     self._ranks = np.arange(len(counts))[:,None]+1
     self._counts = np.array([count for _, count in counts.most_common()])[:,None]
@@ -54,11 +54,11 @@ class Zipf(Configurable):
       self.preds, self.error = self.fit()
       self.dump()
     return
-  
+
   #=============================================================
   def __call__(self):
     """"""
-    
+
     radam_optimizer = RadamOptimizer.from_configurable(self, learning_rate=1e-1, decay_steps=500)
     x = tf.placeholder(tf.float32, shape=(None,1), name='x')
     y = tf.placeholder(tf.float32, shape=(None,1), name='y')
@@ -75,11 +75,11 @@ class Zipf(Configurable):
     ell += tf.reduce_mean((tf.reduce_max(w, axis=0) - 1)**2 / 2)
     minimize = radam_optimizer.minimize(ell, name='minimize')
     return x, y, ell, minimize
-    
+
   #=============================================================
   def dump(self):
     """"""
-    
+
     a = self.params['a']
     b = self.params['b']
     s = self.params['s']
@@ -88,11 +88,11 @@ class Zipf(Configurable):
     with open(os.path.join(self.save_dir, '%s.pkl' % self.name.lower()), 'w') as f:
       pkl.dump(params, f)
     return
-  
+
   #=============================================================
   def load(self):
     """"""
-    
+
     with open(os.path.join(self.save_dir, '%s.pkl' % self.name.lower())) as f:
       params = pkl.load(f)
     self.params['a'] = params[0]
@@ -101,15 +101,15 @@ class Zipf(Configurable):
     self.params['t'] = params[3]
     assert len(params[0]) == self.n_zipfs
     return
-  
+
   #=============================================================
   def fit(self):
     """"""
-    
-    batch_size = self.batch_size 
+
+    batch_size = self.batch_size
     print_every = self.print_every
     verbose = self.verbose
-    
+
     losses = []
     with tf.Graph().as_default() as graph:
       x, y, ell, minimize = self()
@@ -136,14 +136,14 @@ class Zipf(Configurable):
     self.params['s'] = s
     self.params['t'] = t
     return yhat, (np.log(self.freqs) - yhat)
-  
+
   #=============================================================
   def plot(self):
     """"""
-    
+
     a, b = self.params['a'], self.params['b']
     s, t = self.params['s'], self.params['t']
-    
+
     fig, ((ax0, ax1), (ax2, ax3)) = plt.subplots(figsize=(10,10), ncols=2, nrows=2)
     ax0.plot(self.ranks.flatten(), self.preds.flatten(), label='Best fit')
     ax0.plot(self.ranks.flatten(), self.freqs.flatten(), label='Data')
@@ -155,14 +155,14 @@ class Zipf(Configurable):
     ax0.set_xlabel('Log token rank')
     ax0.set_ylabel('Log token frequency')
     ax0.set_ylim(ymax=1,ymin=1e-7)
-    
+
     ax1.set_title('Error of best fit')
     ax1.plot(self.ranks.flatten(), self.error.flatten(), 'r')
     ax1.set_xscale('log')
     ax1.grid()
     ax1.set_xlabel('Log token rank')
     ax1.set_ylabel('Error')
-    
+
     ax2.plot(self.ranks.flatten(), self.preds.flatten())
     for z in self.zipf(self.ranks).T:
       ax2.plot(self.ranks.flatten(), np.exp(z), '--k')
@@ -173,7 +173,7 @@ class Zipf(Configurable):
     ax2.set_ylabel('Log token frequency')
     ax2.set_ylim(ymax=1,ymin=1e-7)
     ax2.grid()
-    
+
     ax3.plot(self.ranks.flatten(), self.preds.flatten())
     ax3.set_yscale('log')
     ax3.set_xscale('log')
@@ -181,20 +181,20 @@ class Zipf(Configurable):
     ax3.set_ylabel('Log token frequency')
     ax3.set_ylim(ymax=1,ymin=1e-7)
     ax3.grid()
-    
+
     ax4 = ax3.twinx()
     for w in self.weight(self.ranks).T:
       ax4.plot(self.ranks.flatten(), w, '--k')
     ax4.set_xscale('log')
     ax4.set_title('Zipf weights')
     ax4.set_ylabel('Weight')
-    
+
     fig.suptitle('Multi-Zipf Distribution', fontsize=14, fontweight='bold')
     fig.tight_layout()
     fig.subplots_adjust(top=.925)
     plt.savefig(os.path.join(self.save_dir, '%s.png' % (self.name)))
     return
-  
+
   #=============================================================
   def affine(self, x, a, b):
     return a*np.log(x) + b
@@ -214,7 +214,7 @@ class Zipf(Configurable):
     w = self.weight(x)
     z = self.zipf(x)
     return np.einsum('...i,...i->...', w, z)
-    
+
   #=============================================================
   @property
   def ranks(self):

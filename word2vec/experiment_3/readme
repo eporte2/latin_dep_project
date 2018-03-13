@@ -1,0 +1,11 @@
+This time, the window was not allowed to span across sentences
+neg sampling number was decreased(though this might not actually be necessary)
+learning rate = 0.001
+Adam Optimizer
+10K steps
+window size = 3
+neg sample = 16
+batch_size = 128
+embedding_size = 128  # Dimension of the embedding vector.
+
+Could try bigger window

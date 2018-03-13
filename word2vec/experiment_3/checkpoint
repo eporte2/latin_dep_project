@@ -1,0 +1,2 @@
+model_checkpoint_path: "/Users/brandenchan/Documents/Uni Work/Stanford/2nd Year/Winter/cs_224n/latin_dep_project/word2vec/log/model.ckpt"
+all_model_checkpoint_paths: "/Users/brandenchan/Documents/Uni Work/Stanford/2nd Year/Winter/cs_224n/latin_dep_project/word2vec/log/model.ckpt"

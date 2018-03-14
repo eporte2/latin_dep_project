@@ -37,7 +37,7 @@ import tensorflow as tf
 from tensorflow.contrib.tensorboard.plugins import projector
 
 #VARIABLES
-num_steps = 10001
+num_steps = 100001
 vocabulary_size = 50
 batch_size = 128
 embedding_size = 128  # Dimension of the embedding vector.

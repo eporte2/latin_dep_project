@@ -28,7 +28,7 @@ parser.add_argument(
 FLAGS, unparsed = parser.parse_known_args()
 
 def reduce_dims(input):
-    tsne = TSNE(perplexity=10,
+    tsne = TSNE(perplexity=5,
                 n_components=2,
                 init='pca',
                 n_iter=5000,

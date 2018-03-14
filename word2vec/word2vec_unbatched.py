@@ -37,7 +37,7 @@ import tensorflow as tf
 from tensorflow.contrib.tensorboard.plugins import projector
 
 #VARIABLES
-num_steps = 2001
+num_steps = 6001
 vocabulary_size = 50
 batch_size = 128
 embedding_size = 128  # Dimension of the embedding vector.
@@ -282,6 +282,7 @@ with tf.Session(graph=graph) as session:
           log_str = '%s %s,' % (log_str, close_word)
         print(log_str)
   final_embeddings = normalized_embeddings.eval()
+
 
 
   # Write corresponding labels for the embeddings.

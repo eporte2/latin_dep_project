@@ -36,6 +36,16 @@ import tensorflow as tf
 
 from tensorflow.contrib.tensorboard.plugins import projector
 
+#VARIABLES
+num_steps = 2001
+vocabulary_size = 50
+batch_size = 128
+embedding_size = 128  # Dimension of the embedding vector.
+skip_window = 3  # How many words to consider left and right.
+num_skips = 8  # How many times to reuse an input to generate a label.
+num_sampled = 16  # Number of negative examples to sample.
+
+
 # Give a folder path as an argument with '--log_dir' to save
 # TensorBoard summaries. Default is a log folder in current directory.
 current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -63,9 +73,6 @@ def read_data(filename):
 
 vocabulary = read_data(filename)
 print('Data size', len(vocabulary))
-
-# Step 2: Build the dictionary and replace rare words with UNK token.
-vocabulary_size = 50
 
 
 def build_dataset(words, n_words):
@@ -137,13 +144,6 @@ def generate_batch(num_windows, skip_window):
   final_batch, final_labels = list(zip(*bat_lab))
   return np.array(final_batch), np.array(final_labels).reshape(len(final_labels),1)
 
-batch_size = 128
-embedding_size = 128  # Dimension of the embedding vector.
-skip_window = 5  # How many words to consider left and right.
-num_skips = 8  # How many times to reuse an input to generate a label.
-num_sampled = 16  # Number of negative examples to sample.
-
-
 batch, labels = generate_batch(num_windows=10, skip_window=skip_window)
 for i in range(10):
   print(batch[i], reverse_dictionary[batch[i]], '->', labels[i, 0],
@@ -208,7 +208,7 @@ with graph.as_default():
 
   # Construct the SGD optimizer.
   with tf.name_scope('optimizer'):
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
+    optimizer = tf.train.GradientDescentOptimizer(learning_rate=1).minimize(loss)
 
   # Compute the cosine similarity between minibatch examples and all embeddings.
   norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), 1, keep_dims=True))
@@ -229,7 +229,6 @@ with graph.as_default():
 
 # Step 5: Begin training.
 # num_steps = 100001
-num_steps = 10001
 
 with tf.Session(graph=graph) as session:
   # Open a writer to write summaries.
@@ -282,6 +281,8 @@ with tf.Session(graph=graph) as session:
           close_word = reverse_dictionary[nearest[k]]
           log_str = '%s %s,' % (log_str, close_word)
         print(log_str)
+  final_embeddings = normalized_embeddings.eval()
+
 
   # Write corresponding labels for the embeddings.
   with open(FLAGS.log_dir + '/metadata.tsv', 'w') as f:
@@ -291,8 +292,11 @@ with tf.Session(graph=graph) as session:
   # Save the model for checkpoints.
   saver.save(session, os.path.join(FLAGS.log_dir, 'model.ckpt'))
 
-  final_embeddings = nce_weights.eval() + embeddings.eval()
-  pickle.dump(final_embeddings, open(FLAGS.log_dir + "/word_vectors.pkl", "w"))
+  # final_embeddings = nce_weights.eval() + embeddings.eval()
+  pickle.dump(nce_weights.eval(session=session), open(FLAGS.log_dir + "/nce_weights.pkl", "w"))
+  pickle.dump(normalized_embeddings.eval(session=session), open(FLAGS.log_dir + "/normalized_embeddings.pkl", "w"))
+  pickle.dump(embeddings.eval(session=session), open(FLAGS.log_dir + "/embeddings.pkl", "w"))
+  # pickle.dump(final_embeddings, open(FLAGS.log_dir + "/word_vectors.pkl", "w"))
 
   # Create a configuration for visualizing embeddings with the labels in TensorBoard.
   config = projector.ProjectorConfig()

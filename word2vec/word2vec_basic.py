@@ -296,9 +296,9 @@ with tf.Session(graph=graph) as session:
   weights_conf = config.embeddings.add()
   weights_conf.tensor_name = nce_weights.name
   weights_conf.metadata_path = os.path.join(FLAGS.log_dir, 'metadata.tsv')
-  final_conf = config.embeddings.add()
-  final_conf.tensor_name = final_concat_embeddings.name
-  final_conf.metadata_path = os.path.join(FLAGS.log_dir, 'metadata.tsv')
+  # final_conf = config.embeddings.add()
+  # final_conf.tensor_name = final_concat_embeddings.name
+  # final_conf.metadata_path = os.path.join(FLAGS.log_dir, 'metadata.tsv')
   projector.visualize_embeddings(writer, config)
 
 

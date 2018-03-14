@@ -30,7 +30,6 @@ import zipfile
 import numpy as np
 from six.moves import urllib
 from six.moves import xrange  # pylint: disable=redefined-builtin
-from pprint import pprint
 import tensorflow as tf
 
 from tensorflow.contrib.tensorboard.plugins import projector
@@ -43,7 +42,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument(
     '--log_dir',
     type=str,
-    default=os.path.join(current_path, 'word2vec_log'),
+    default=os.path.join(current_path, 'log'),
     help='The log directory for TensorBoard summaries.')
 FLAGS, unparsed = parser.parse_known_args()
 
@@ -51,19 +50,43 @@ FLAGS, unparsed = parser.parse_known_args()
 if not os.path.exists(FLAGS.log_dir):
   os.makedirs(FLAGS.log_dir)
 
-filename = "Latin-ITTB/pos_only_train"
+# Step 1: Download the data.
+url = 'http://mattmahoney.net/dc/'
+
+
+# pylint: disable=redefined-outer-name
+def maybe_download(filename, expected_bytes):
+  """Download a file if not present, and make sure it's the right size."""
+  local_filename = os.path.join(gettempdir(), filename)
+  if not os.path.exists(local_filename):
+    local_filename, _ = urllib.request.urlretrieve(url + filename,
+                                                   local_filename)
+  statinfo = os.stat(local_filename)
+  if statinfo.st_size == expected_bytes:
+    print('Found and verified', filename)
+  else:
+    print(statinfo.st_size)
+    raise Exception('Failed to verify ' + local_filename +
+                    '. Can you get to it with a browser?')
+  return local_filename
+
+
+filename = maybe_download('text8.zip', 31344016)
+
+
+# Read the data into a list of strings.
 def read_data(filename):
   """Extract the first file enclosed in a zip file as a list of words."""
-  with open(filename) as f:
-    data = tf.compat.as_str(f.read()).split()
+  with zipfile.ZipFile(filename) as f:
+    data = tf.compat.as_str(f.read(f.namelist()[0])).split()
   return data
 
-# filename = "Latin-ITTB/pos_only_train"
+
 vocabulary = read_data(filename)
 print('Data size', len(vocabulary))
 
 # Step 2: Build the dictionary and replace rare words with UNK token.
-vocabulary_size = 50
+vocabulary_size = 50000
 
 
 def build_dataset(words, n_words):
@@ -141,14 +164,14 @@ batch_size = 128
 embedding_size = 128  # Dimension of the embedding vector.
 skip_window = 1  # How many words to consider left and right.
 num_skips = 2  # How many times to reuse an input to generate a label.
-num_sampled = 32  # Number of negative examples to sample.
+num_sampled = 64  # Number of negative examples to sample.
 
 # We pick a random validation set to sample nearest neighbors. Here we limit the
 # validation samples to the words that have a low numeric ID, which by
 # construction are also the most frequent. These 3 variables are used only for
 # displaying model accuracy, they don't affect calculation.
-valid_size = 3 # Random set of words to evaluate similarity on.
-valid_window = 5  # Only pick dev samples in the head of the distribution.
+valid_size = 16  # Random set of words to evaluate similarity on.
+valid_window = 100  # Only pick dev samples in the head of the distribution.
 valid_examples = np.random.choice(valid_window, valid_size, replace=False)
 
 graph = tf.Graph()
@@ -218,7 +241,7 @@ with graph.as_default():
   saver = tf.train.Saver()
 
 # Step 5: Begin training.
-num_steps = 100001
+num_steps = 10001
 
 with tf.Session(graph=graph) as session:
   # Open a writer to write summaries.
@@ -265,7 +288,7 @@ with tf.Session(graph=graph) as session:
       sim = similarity.eval()
       for i in xrange(valid_size):
         valid_word = reverse_dictionary[valid_examples[i]]
-        top_k = 2  # number of nearest neighbors
+        top_k = 8  # number of nearest neighbors
         nearest = (-sim[i, :]).argsort()[1:top_k + 1]
         log_str = 'Nearest to %s:' % valid_word
         for k in xrange(top_k):

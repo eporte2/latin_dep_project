@@ -37,12 +37,11 @@ import tensorflow as tf
 from tensorflow.contrib.tensorboard.plugins import projector
 
 #VARIABLES
-num_steps = 6001
+num_steps = 10001
 vocabulary_size = 50
 batch_size = 128
 embedding_size = 128  # Dimension of the embedding vector.
 skip_window = 3  # How many words to consider left and right.
-num_skips = 8  # How many times to reuse an input to generate a label.
 num_sampled = 16  # Number of negative examples to sample.
 
 
@@ -208,7 +207,7 @@ with graph.as_default():
 
   # Construct the SGD optimizer.
   with tf.name_scope('optimizer'):
-    optimizer = tf.train.GradientDescentOptimizer(learning_rate=1).minimize(loss)
+    optimizer = tf.train.AdamOptimizer(learning_rate=0.001).minimize(loss)
 
   # Compute the cosine similarity between minibatch examples and all embeddings.
   norm = tf.sqrt(tf.reduce_sum(tf.square(embeddings), 1, keep_dims=True))
@@ -228,7 +227,6 @@ with graph.as_default():
   saver = tf.train.Saver()
 
 # Step 5: Begin training.
-# num_steps = 100001
 
 with tf.Session(graph=graph) as session:
   # Open a writer to write summaries.
@@ -293,11 +291,10 @@ with tf.Session(graph=graph) as session:
   # Save the model for checkpoints.
   saver.save(session, os.path.join(FLAGS.log_dir, 'model.ckpt'))
 
-  # final_embeddings = nce_weights.eval() + embeddings.eval()
+  combined = nce_weights.eval() + embeddings.eval()
   pickle.dump(nce_weights.eval(session=session), open(FLAGS.log_dir + "/nce_weights.pkl", "w"))
-  pickle.dump(normalized_embeddings.eval(session=session), open(FLAGS.log_dir + "/normalized_embeddings.pkl", "w"))
   pickle.dump(embeddings.eval(session=session), open(FLAGS.log_dir + "/embeddings.pkl", "w"))
-  # pickle.dump(final_embeddings, open(FLAGS.log_dir + "/word_vectors.pkl", "w"))
+  pickle.dump(combined, open(FLAGS.log_dir + "/combined.pkl", "w"))
 
   # Create a configuration for visualizing embeddings with the labels in TensorBoard.
   config = projector.ProjectorConfig()

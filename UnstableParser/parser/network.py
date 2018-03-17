@@ -2,13 +2,13 @@
 # -*- coding: UTF-8 -*-
 
 # Copyright 2016 Timothy Dozat
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,16 +39,16 @@ from parser.neural.optimizers import RadamOptimizer
 #***************************************************************
 class Network(Configurable):
   """"""
-  
+
   #=============================================================
   def __init__(self, *args, **kwargs):
     """"""
-    
+
     super(Network, self).__init__(*args, **kwargs)
     # hacky!
     #hacky_train_files = op.join(self.save_dir, op.basename(self.get("train_files")))
     #self._config.set('Configurable', 'train_files', hacky_train_files)
-    
+
     # TODO make this more flexible, maybe specify it in config?
     temp_nlp_model = self.nlp_model.from_configurable(self)
     if temp_nlp_model.input_vocabs == ['tags']:
@@ -59,24 +59,28 @@ class Network(Configurable):
       word_vocab = WordVocab.from_configurable(self)
       pretrained_vocab = PretrainedVocab.from_vocab(word_vocab)
       subtoken_vocab = self.subtoken_vocab.from_vocab(word_vocab)
-      word_multivocab = Multivocab.from_configurable(self, [word_vocab, pretrained_vocab, subtoken_vocab], name=word_vocab.name)
-      #word_multivocab = Multivocab.from_configurable(self, [word_vocab, pretrained_vocab], name=word_vocab.name)
+      #word_multivocab = Multivocab.from_configurable(self, [word_vocab, pretrained_vocab, subtoken_vocab], name=word_vocab.name)
+      word_multivocab = Multivocab.from_configurable(self, [word_vocab, pretrained_vocab], name=word_vocab.name)
       tag_vocab = TagVocab.from_configurable(self)
     dep_vocab = DepVocab.from_configurable(self)
+
+    ######Changed
     lemma_vocab = LemmaVocab.from_configurable(self)
+    pretrained_lemma = PretrainedVocab.from_vocab(lemma_vocab)
+    lemma_multivocab= Multivocab.from_configurable(self, [lemma_vocab, pretrained_lemma], name=lemma_vocab.name)
     xtag_vocab = XTagVocab.from_configurable(self)
     head_vocab = HeadVocab.from_configurable(self)
     rel_vocab = RelVocab.from_configurable(self)
-    self._vocabs = [dep_vocab, word_multivocab, lemma_vocab, tag_vocab, xtag_vocab, head_vocab, rel_vocab]
+    self._vocabs = [dep_vocab, word_multivocab, lemma_multivocab, tag_vocab, xtag_vocab, head_vocab, rel_vocab]
     self._global_step = tf.Variable(0., trainable=False, name='global_step')
     self._global_epoch = tf.Variable(0., trainable=False, name='global_epoch')
     self._optimizer = RadamOptimizer.from_configurable(self, global_step=self.global_step)
     return
-  
+
   #=============================================================
   def add_file_vocabs(self, conll_files):
     """"""
-    
+
     # TODO don't depend on hasattr
     for vocab in self.vocabs:
       if hasattr(vocab, 'add_files'):
@@ -85,19 +89,19 @@ class Network(Configurable):
       if hasattr(vocab, 'index_tokens'):
         vocab.index_tokens()
     return
-  
+
   #=============================================================
   def setup_vocabs(self):
     """"""
-    
+
     for vocab in self.vocabs:
       vocab.setup()
-    return 
-  
+    return
+
   #=============================================================
   def train(self, load=False):
     """"""
-    
+
     # prep the configurables
     self.add_file_vocabs(self.parse_files)
     self.setup_vocabs()
@@ -116,7 +120,7 @@ class Network(Configurable):
     best_acc = 0
     n_iters_since_improvement = 0
     n_iters_in_epoch = 0
-    
+
     # calling these properties is inefficient so we save them in separate variables
     min_train_iters = self.min_train_iters
     max_train_iters = self.max_train_iters
@@ -124,13 +128,13 @@ class Network(Configurable):
     save_every = self.save_every
     verbose = self.verbose
     quit_after_n_iters_without_improvement = self.quit_after_n_iters_without_improvement
-    
+
     # load or prep the history
     if load:
       self.history = pkl.load(open(os.path.join(self.save_dir, 'history.pkl')))
     else:
       self.history = {'train': defaultdict(list), 'valid': defaultdict(list)}
-    
+
     # start up the session
     config_proto = tf.ConfigProto()
     if self.per_process_gpu_memory_fraction == -1:
@@ -174,7 +178,7 @@ class Network(Configurable):
             current_acc = validset.update_history(self.history['valid'], valid_accumulators)
             # print
             if verbose:
-              print(ctext('{0:6d}'.format(int(total_train_iters)), 'bold')+')') 
+              print(ctext('{0:6d}'.format(int(total_train_iters)), 'bold')+')')
               trainset.print_accuracy(train_accumulators, train_time)
               validset.print_accuracy(valid_accumulators, valid_time)
             train_accumulators = np.zeros(len(train_outputs))
@@ -214,7 +218,7 @@ class Network(Configurable):
         input_dir, input_file = os.path.split(input_file)
         output_dir = self.save_dir
         output_file = input_file
-        
+
         start_time = time.time()
         probs = []
         sents = []
@@ -225,17 +229,17 @@ class Network(Configurable):
     if self.verbose:
       print(ctext('Parsing {0} file(s) took {1} seconds'.format(len(input_files), time.time()-start_time), 'bright_green'))
     return
-  
+
   #=============================================================
   def parse(self, input_files, output_dir=None, output_file=None):
     """"""
-    
+
     if not isinstance(input_files, (tuple, list)):
       input_files = [input_files]
     if len(input_files) > 1 and output_file is not None:
       raise ValueError('Cannot provide a value for --output_file when parsing multiple files')
     self.add_file_vocabs(input_files)
-    
+
     for input_file in input_files:
       with tf.Graph().as_default():
         config_proto = tf.ConfigProto()
@@ -255,13 +259,13 @@ class Network(Configurable):
           for var in self.non_save_vars:
             sess.run(var.initializer)
           saver.restore(sess, tf.train.latest_checkpoint(self.save_dir))
-          
+
           # Iterate through files and batches
           parseset = Parseset.from_configurable(self, self.vocabs, parse_files=input_file, nlp_model=self.nlp_model)
           with tf.variable_scope(self.name.title(), reuse=True):
             parse_tensors = parseset(moving_params=self.optimizer)
           parse_outputs = [parse_tensors[parse_key] for parse_key in parseset.parse_keys]
-          
+
           input_dir, input_file = os.path.split(input_file)
           if output_dir is None and output_file is None:
             output_dir = self.save_dir
@@ -271,7 +275,7 @@ class Network(Configurable):
             output_path = os.path.join(output_dir, input_file)
           else:
             output_path = output_file
-          
+
           start_time = time.time()
           probs = []
           sents = []
@@ -285,7 +289,7 @@ class Network(Configurable):
     if self.verbose:
       print(ctext('Parsing {0} file(s) took {1} seconds'.format(len(input_files), time.time()-start_time), 'bright_green'))
     return
-  
+
   #=============================================================
   @property
   def vocabs(self):
@@ -312,7 +316,7 @@ class Network(Configurable):
 #***************************************************************
 if __name__ == '__main__':
   """"""
-  
+
   from parser import Network
   configurable = Configurable()
   network = Network.from_configurable(configurable)

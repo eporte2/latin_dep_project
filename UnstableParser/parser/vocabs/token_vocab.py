@@ -2,13 +2,13 @@
 # -*- coding: UTF-8 -*-
 
 # Copyright 2016 Timothy Dozat
-# 
+#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,15 +35,15 @@ __all__ = ['WordVocab', 'LemmaVocab', 'TagVocab', 'XTagVocab', 'RelVocab']
 #***************************************************************
 class TokenVocab(BaseVocab):
   """"""
-  
+
   #=============================================================
   def __init__(self, *args, **kwargs):
     """"""
-    
+
     recount = kwargs.pop('recount', False)
     initialize_zero = kwargs.pop('initialize_zero', True)
     super(TokenVocab, self).__init__(*args, **kwargs)
-    
+
     if recount:
       self.count()
     else:
@@ -53,18 +53,19 @@ class TokenVocab(BaseVocab):
         self.count()
         self.dump()
     self.index_vocab()
-    
+
     embed_dims = [len(self), self.embed_size]
     if initialize_zero:
       self._embeddings_array = np.zeros(embed_dims)
-    else:
+  else:
       self._embeddings_array = np.random.randn(*embed_dims)
+
     return
-  
+
   #=============================================================
   def setup(self):
     """"""
-    
+
     self.placeholder = None
     del self._embeddings
     with tf.device('/cpu:0'):
@@ -72,14 +73,14 @@ class TokenVocab(BaseVocab):
         self._embeddings = tf.Variable(self._embeddings_array, name='Embeddings', dtype=tf.float32, trainable=True)
     return
 
-  
+
   #=============================================================
   def count(self, conll_files=None):
     """"""
-    
+
     if conll_files is None:
       conll_files = self.train_files
-    
+
     for conll_file in conll_files:
       with codecs.open(conll_file, encoding='utf-8', errors='ignore') as f:
         for line_num, line in enumerate(f):
@@ -95,11 +96,11 @@ class TokenVocab(BaseVocab):
           except:
             raise ValueError('File %s is misformatted at line %d' % (conll_file, line_num+1))
     return
-  
+
   #=============================================================
   def load(self):
     """"""
-    
+
     with codecs.open(self.filename, encoding='utf-8') as f:
       for line_num, line in enumerate(f):
         try:
@@ -111,41 +112,41 @@ class TokenVocab(BaseVocab):
         except:
           raise ValueError('File %s is misformatted at line %d' % (train_file, line_num+1))
     return
-  
+
   #=============================================================
   def dump(self):
     """"""
-    
+
     with codecs.open(self.filename, 'w', encoding='utf-8') as f:
       for word, count in self.sorted_counts(self.counts):
         f.write('%s\t%d\n' % (word, count))
     return
-  
+
   #=============================================================
   def index_vocab(self):
     """"""
-    
+
     for token, count in self.sorted_counts(self.counts):
       if ((count >= self.min_occur_count) and
-          token not in self and 
+          token not in self and
           (not self.max_rank or len(self) < self.max_rank)):
         self[token] = len(self)
     return
-  
+
   #=============================================================
   def fit_to_zipf(self, plot=True):
     """"""
-    
+
     zipf = Zipf.from_configurable(self, self.counts, name='zipf-%s'%self.name)
     if plot:
       zipf.plot()
     return zipf
-  
+
   #=============================================================
   @staticmethod
   def sorted_counts(counts):
     return sorted(counts.most_common(), key=lambda x: (-x[1], x[0]))
-  
+
   #=============================================================
   @property
   def conll_idx(self):
@@ -166,10 +167,10 @@ class RelVocab(TokenVocab):
 #***************************************************************
 if __name__ == '__main__':
   """"""
-  
+
   from parser import Configurable
   from parser.vocabs import PretrainedVocab, TokenVocab, WordVocab
-  
+
   configurable = Configurable()
   if os.path.isfile('saves/defaults/words.txt'):
     os.remove('saves/defaults/words.txt')

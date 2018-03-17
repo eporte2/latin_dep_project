@@ -23,6 +23,7 @@ import re
 import codecs
 import numpy as np
 import tensorflow as tf
+import pdb
 #import matplotlib.pyplot as plt
 
 from parser.misc.colors import ctext, color_pattern
@@ -39,7 +40,7 @@ class BaseParser(NN):
   #=============================================================
   def __call__(self, vocabs, moving_params=None):
     """"""
-
+    #pdb.set_trace()
     self.moving_params = moving_params
     if isinstance(vocabs, dict):
       self.vocabs = vocabs

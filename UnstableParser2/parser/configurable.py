@@ -91,7 +91,10 @@ class Configurable(object):
     for kw, arg in kwargs.iteritems():
       if isinstance(arg, dict):
         section = config_sections[kw]
+	print(config_options)
         for option, value in arg.iteritems():
+	  print(option)
+	  print
           assert option in config_options
           config.set(section, option, str(value))
       else:

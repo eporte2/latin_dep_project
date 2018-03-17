@@ -23,7 +23,7 @@ import gc
 import os
 import time
 import codecs
-import cPickle as pkl
+import _pickle as pkl
 from collections import defaultdict
 import os.path as op
 

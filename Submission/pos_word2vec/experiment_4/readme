@@ -1,0 +1,8 @@
+num_steps = 100001
+vocabulary_size = 50
+batch_size = 128
+embedding_size = 128  # Dimension of the embedding vector.
+skip_window = 3  # How many words to consider left and right.
+num_sampled = 16  # Number of negative examples to sample.
+Adam learning rate 0.01
+Unnormalized vectors as output

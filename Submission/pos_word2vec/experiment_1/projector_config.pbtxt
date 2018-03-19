@@ -1,0 +1,4 @@
+embeddings {
+  tensor_name: "embeddings/Variable:0"
+  metadata_path: "/Users/brandenchan/Documents/Uni Work/Stanford/2nd Year/Winter/cs_224n/latin_dep_project/word2vec/log/metadata.tsv"
+}

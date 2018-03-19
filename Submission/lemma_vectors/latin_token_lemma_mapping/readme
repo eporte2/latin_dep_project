@@ -1,2 +1,0 @@
-This folder contains tsv files mapping token to lemma
-These mappings are extracted from the raw conll data (wikipedia and common crawl) as well as the conll ittb data (train dev and test)

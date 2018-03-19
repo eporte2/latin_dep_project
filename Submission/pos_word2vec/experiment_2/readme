@@ -1,4 +1,0 @@
-input data padded at the beginning and end of sentences
-10K steps
-window size 3
-num_skips 4
